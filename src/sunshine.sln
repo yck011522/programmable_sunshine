@@ -5,6 +5,10 @@ VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "01RTC", "01RTC\01RTC.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02Radio", "02Radio\02Radio.vcxproj", "{88BC0471-3B20-4C43-BFF7-83DBBE7B9362}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02RadioExampleTest", "02RadioExampleTest\02RadioExampleTest.vcxproj", "{610A2B3A-54A7-46AC-8DE0-138168CD6032}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,6 +19,14 @@ Global
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.Build.0 = Debug|Win32
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.ActiveCfg = Release|Win32
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.Build.0 = Release|Win32
+		{88BC0471-3B20-4C43-BFF7-83DBBE7B9362}.Debug|x86.ActiveCfg = Debug|Win32
+		{88BC0471-3B20-4C43-BFF7-83DBBE7B9362}.Debug|x86.Build.0 = Debug|Win32
+		{88BC0471-3B20-4C43-BFF7-83DBBE7B9362}.Release|x86.ActiveCfg = Release|Win32
+		{88BC0471-3B20-4C43-BFF7-83DBBE7B9362}.Release|x86.Build.0 = Release|Win32
+		{610A2B3A-54A7-46AC-8DE0-138168CD6032}.Debug|x86.ActiveCfg = Debug|Win32
+		{610A2B3A-54A7-46AC-8DE0-138168CD6032}.Debug|x86.Build.0 = Debug|Win32
+		{610A2B3A-54A7-46AC-8DE0-138168CD6032}.Release|x86.ActiveCfg = Release|Win32
+		{610A2B3A-54A7-46AC-8DE0-138168CD6032}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
