@@ -31,3 +31,5 @@
 *.out
 *.app
 Debug/
+src/.vs/
+src/03OledMenu/__vm/
