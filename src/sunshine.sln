@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02Radio", "02Radio\02Radio.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02RadioExampleTest", "02RadioExampleTest\02RadioExampleTest.vcxproj", "{610A2B3A-54A7-46AC-8DE0-138168CD6032}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "03OledMenu", "03OledMenu\03OledMenu.vcxproj", "{514F3E86-5F50-4C7B-BFB9-9D36BE60961B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -27,6 +29,10 @@ Global
 		{610A2B3A-54A7-46AC-8DE0-138168CD6032}.Debug|x86.Build.0 = Debug|Win32
 		{610A2B3A-54A7-46AC-8DE0-138168CD6032}.Release|x86.ActiveCfg = Release|Win32
 		{610A2B3A-54A7-46AC-8DE0-138168CD6032}.Release|x86.Build.0 = Release|Win32
+		{514F3E86-5F50-4C7B-BFB9-9D36BE60961B}.Debug|x86.ActiveCfg = Debug|Win32
+		{514F3E86-5F50-4C7B-BFB9-9D36BE60961B}.Debug|x86.Build.0 = Debug|Win32
+		{514F3E86-5F50-4C7B-BFB9-9D36BE60961B}.Release|x86.ActiveCfg = Release|Win32
+		{514F3E86-5F50-4C7B-BFB9-9D36BE60961B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

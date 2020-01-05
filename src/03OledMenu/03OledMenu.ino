@@ -1,23 +1,23 @@
+// Menu long strings are stored in pgmspace
+#include <avr/pgmspace.h>
 
-// Date and time functions using a DS1307 RTC connected via I2C and Wire lib
+// DS1307 RTC (I2C)
 #include "RTClib.h"
-
 RTC_DS1307 rtc;
 DateTime timeNow;
 
-// OLED Display functions using Adafruit SSD1306 Library
+// OLED Display SSD1306 (I2C)
 
 #include "SPI.h"
 #include "Wire.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_SSD1306.h"
-
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// Encoder Connection
+// Rotary Encoder and Button
 // CLK = Pin 2 (Interrupt)
 // DT  = Pin 3 (Interrupt)
 // SW  = Pin 4
@@ -28,15 +28,25 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Encoder dial(2, 3);
 #define BUTTON_PIN 4
 
-// Radio
+// RF24L01 Radio 
 #include "nRF24L01.h"
 #include "RF24.h"
-RF24 radio(9, 10); // CE, CSN         
-const byte address[6] = "00001";     //Byte of array representing the address. This is the address where we will send the data. This should be same on the receiving side.
-
+RF24 radio(9, 10); // Radio CE, CSN pins
+const byte address[6] = "pgsun";     //Byte of array representing the address. This is the address where we will send the data. This should be same on the receiving side.
+bool previousTxSuccessful = true;
 
 // Menu variables
+
 unsigned int SettingsMode = 0;
+const char string_0[] PROGMEM = " "; //
+const char string_1[] PROGMEM = "Set Sunrise Time (HH)";
+const char string_2[] PROGMEM = "Set Sunrise Time (MM)";
+const char string_3[] PROGMEM = "Set Sunrise Duration (Mins)";
+const char string_4[] PROGMEM = "Set Current Time (HH)";
+const char string_5[] PROGMEM = "Set Current Time (MM)";
+const char *const string_table[] PROGMEM = { string_0, string_1, string_2, string_3, string_4, string_5 };
+char headingLineBuffer[35];
+
 
 // Alarm / Sunrise Variables
 #include <EEPROM.h>
@@ -46,13 +56,14 @@ int alarmDuration = EEPROM.read(2) % 91; // 15;
 double brightnessRateOfChange = 0.0;
 double brightnessPercentage = 0.0;    // how bright the output is
 
+// Menu Behaviour ------------------
 // Single Press
 // 0 - Toggle Light On Off
 
 // Turn Dial
 // - Initial Turn doesnt do anything to avoid accidential touch
 // - Adjust Brightness
-// - Cooldown will reset the 
+// - Initial Turn Adoidance resets after cooldown
 
 // Long Press = Settings Mode
 // 1 - Change Sunrise Time (Hour)
@@ -61,33 +72,34 @@ double brightnessPercentage = 0.0;    // how bright the output is
 // 4 - Change Current Time (Hour)
 // 5 - Change Current Time (Min)
 
-// Idle for a while
 
 void setup() {
+
+	//Debug Message via USB Serial 
 	Serial.begin(115200);
 
 	// OLED Display Setup
 	// SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
 	if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
 		Serial.println(F("SSD1306 allocation failed"));
-		for (;;); // Don't proceed, loop forever
+		while (1); // Don't proceed, loop forever
 	}
 	// Real Time Clock Setup
 	if (!rtc.begin()) {
 		Serial.println("Couldn't find RTC");
-		while (1);
+		while (1); // Don't proceed, loop forever
 	}
 
 	if (!rtc.isrunning()) {
 		Serial.println("RTC is NOT running!");
+		while (1); // Don't proceed, loop forever
 	}
 
 	// Radio Setup
 	radio.begin();                  //Starting the Wireless communication
 	radio.openWritingPipe(address); //Setting the address where we will send the data
-	radio.setPALevel(RF24_PA_MIN);  //You can set it as minimum or maximum depending on the distance between the transmitter and receiver.
+	radio.setPALevel(RF24_PA_LOW);  //You can set it as minimum or maximum depending on the distance between the transmitter and receiver.
 	radio.stopListening();          //This sets the module as transmitter
-
 
 	// Button and Encoder input setup
 	pinMode(4, INPUT_PULLUP);
@@ -107,9 +119,7 @@ void setup() {
 }
 
 void getTime() {
-
 	timeNow = rtc.now();
-
 }
 
 void redraw() {
@@ -122,72 +132,51 @@ void redraw() {
 
 	// Format Hour and Minutes String
 	String hour, minute, second;
-	if (SettingsMode == 0 || SettingsMode == 4 || SettingsMode == 5) {
-		hour = String(timeNow.hour(), DEC);
-		minute = String(timeNow.minute(), DEC);
-		second = String(timeNow.second(), DEC);
+	hour.reserve(3);
+	minute.reserve(3);
+	second.reserve(3);
+	//char hour[2];
+	//char minute[2];
+	//char second[2];
+	{
+		if (SettingsMode == 0 || SettingsMode == 4 || SettingsMode == 5) {
+			hour.concat(String(timeNow.hour(), DEC));
+			minute.concat(String(timeNow.minute(), DEC));
+			second.concat(String(timeNow.second(), DEC));
+		}
+		if (SettingsMode == 1 || SettingsMode == 2) { // Alarm Time
+			hour.concat(String(alarmHours, DEC));
+			minute.concat(String(alarmMinutes, DEC));
+		}
+		if (SettingsMode == 3) { // Duration
+			minute.concat(String(alarmDuration, DEC));
+		}
+		if (hour.length() == 1) hour = "0" + hour;
+		if (minute.length() == 1) minute = "0" + minute;
+		if (second.length() == 1) second = "0" + second;
 	}
-	if (SettingsMode == 1 || SettingsMode == 2) { // Alarm Time
-		hour = String(alarmHours, DEC);
-		minute = String(alarmMinutes, DEC);
-	}
-	if (SettingsMode == 3 ) { // Duration
-		minute = String(alarmDuration, DEC);
-	}
-	if (hour.length() == 1) hour = "0" + hour;
-	if (minute.length() == 1) minute = "0" + minute;
-	if (second.length() == 1) second = "0" + second;
-
 	// Draw Hour
 	display.setCursor(0, 11);
-	for (int16_t i = 0; i < hour.length(); i++) {
+	for (int16_t i = 0; i < 2; i++) {
 		display.write(hour[i]);
 	}
 
-	// Draw Separater
+	// Draw Separater Colon
 	display.fillRect(61, 26, 2, 2, WHITE);
 	display.fillRect(61, 31, 2, 2, WHITE);
-	//display.write(':');
 
 	// Draw Minutes
 	display.setCursor(68, 11);
-	for (int16_t i = 0; i < minute.length(); i++) {
+	for (int16_t i = 0; i < 2; i++) {
 		display.write(minute[i]);
 	}
 
-	// Draw Seconds
-	//display.setCursor(58, 30);
-	//display.setTextSize(1);      // Normal 1:1 pixel scale
-	//for (int16_t i = 0; i < second.length(); i++) {
-	//	display.write(second[i]);
-	//}
-
-	// Draw Menu Line
+	// Draw Menu Text
 	display.setCursor(0, 0);
 	display.setTextSize(1);
-	String message;
-	if (SettingsMode == 0) {
-		//message = String("Current Time");
-		message = String(" ");
-	}
-	if (SettingsMode == 1) {
-		message = String("Set Sunrise Time (HH)");
-	}
-	if (SettingsMode == 2) {
-		message = String("Set Sunrise Time (MM)");
-	}
-	if (SettingsMode == 3) {
-		message = String("Set Sunrise Duration (Mins)");
-	}
-	if (SettingsMode == 4) {
-		message = String("Set Current Time (HH)");
-	}
-	if (SettingsMode == 5) {
-		message = String("Set Current Time (MM)");
-	}
-
-	for (int16_t i = 0; i < message.length(); i++) {
-		display.write(message[i]);
+	strcpy_P(headingLineBuffer, (char *)pgm_read_word(&(string_table[SettingsMode])));  // Casts and dereferencing PROGMEM Strings
+	for (int16_t i = 0; i < strlen(headingLineBuffer); i++) {
+		display.write(headingLineBuffer[i]);
 	}
 
 	// Draw Settings Changing Cursor
@@ -203,13 +192,28 @@ void redraw() {
 		if (brightnessPercentage > 0.01) {
 			display.setCursor(0, 56);
 			display.setTextSize(1);
-			String debugLine = "Light ON: ";
-			debugLine += String((int) brightnessPercentage, DEC);
-			debugLine += "%";
+			String debugLine = String("Light ON ");
+			debugLine.concat((int)brightnessPercentage);
+			debugLine.concat('%');
 			for (int16_t i = 0; i < debugLine.length(); i++) {
 				display.write(debugLine[i]);
 			}
 		}
+	}
+	
+	//Draw ACK NACK
+	if (previousTxSuccessful && brightnessPercentage > 0.01) {
+		display.setCursor(106, 56);
+		display.write('A');
+		display.write('C');
+		display.write('K');
+	} 
+	if (!previousTxSuccessful) {
+		display.setCursor(100, 56);
+		display.write('N');
+		display.write('A');
+		display.write('C');
+		display.write('K');
 	}
 
 	// Display everything
@@ -303,7 +307,7 @@ void readDial() {
 }
 
 void handleDial(int steps) {
-	//Adjust brightness
+	// If not in Settings mode, adjust brightness
 	if (SettingsMode == 0) {
 		static long recentAdjustmentTime = 0;
 		static long accumulatedMoves = 0;
@@ -321,6 +325,7 @@ void handleDial(int steps) {
 		recentAdjustmentTime = millis();
 	}
 
+	// If in Settings mode, adjust and save settings
 	if (SettingsMode == 1) {
 		alarmHours += steps;
 		if (alarmHours > 23) alarmHours = 0;
@@ -383,22 +388,21 @@ void checkSunRiseTime() {
 }
 
 void updateRemoteBrightness() {
-	// Return if last transmission was not long ago
-	// TBD
-
-
 	// The percentage value is * 10 and converted to integer for transmission
-	static String previousString = "";
-	String transmissionString = "";
-	//transmissionString = String((int)(brightnessPercentage * 10));
+	static int previousValue = -1 ;
+	int currentValue = (int)(brightnessPercentage * 10);
+	String transmissionString = String(currentValue, DEC);
+	//transmissionString = String();
 	
-	// Return incase the value is the same
-	if (transmissionString == previousString) return;
-	previousString = String(transmissionString.c_str());
-	
+	// Return incase the value is the same and previous transmission is successful
+	// This means if previous transmission is not successful, it will reattempt
+	if (previousValue == currentValue && previousTxSuccessful) return;
+	previousValue = currentValue;
 
 	// Send to radio
-	//radio.write(transmissionString.c_str(), transmissionString.length());
+	previousTxSuccessful = radio.write(transmissionString.c_str(), transmissionString.length());
+	Serial.print("Sent:");
+	Serial.println(transmissionString);
 }
 
 void loop() {
@@ -408,5 +412,5 @@ void loop() {
 	redraw();
 	computeBrightness();
 	checkSunRiseTime();
-	//updateRemoteBrightness();
+	updateRemoteBrightness();
 }
