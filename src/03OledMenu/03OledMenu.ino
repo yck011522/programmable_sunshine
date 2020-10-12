@@ -1,5 +1,7 @@
 // Menu long strings are stored in pgmspace
 #include <avr/pgmspace.h>
+#include <avr/wdt.h>
+
 
 // DS1307 RTC (I2C)
 #include "RTClib.h"
@@ -115,6 +117,9 @@ void setup() {
 
 	// Clear the buffer
 	display.clearDisplay();
+ 
+  // Watchdog timer to fix self hanging.
+  wdt_enable(WDTO_8S);
 
 }
 
@@ -413,4 +418,5 @@ void loop() {
 	computeBrightness();
 	checkSunRiseTime();
 	updateRemoteBrightness();
+  wdt_reset();
 }
